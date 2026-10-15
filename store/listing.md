@@ -59,7 +59,7 @@ No. All logic ships inside the package.
 |---|---|---|
 | Store icon | 128x128 PNG | `icon128.png` |
 | Screenshot | 1280x800 PNG | `store/promo-1280x800.png` |
-| Package | ZIP, no source/extra files | `html-attribute-inspector-v1.0.0.zip` |
+| Package | ZIP, no source/extra files | `build/html-attribute-inspector-v1.0.0.zip` |
 
 Optional extras (not required to publish): 440x280 small promo tile, 1400x560 marquee.
 

@@ -15,7 +15,8 @@ missing = [f for f in FILES if not (ROOT / f).exists()]
 if missing:
     sys.exit(f"missing files: {missing}")
 
-out = ROOT / f"html-attribute-inspector-v{mf['version']}.zip"
+out = ROOT / "build" / f"html-attribute-inspector-v{mf['version']}.zip"
+out.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
     for f in FILES:
         z.write(ROOT / f, f)
