@@ -101,24 +101,29 @@
     }
   }
 
-  function onClick(e) {
+  // Ctrl + right-click toggles lock on element under cursor
+  function onContextMenu(e) {
     if (!enabled) return;
-    if (popupEl && popupEl.classList.contains('locked') && (e.target === popupEl || popupEl.contains(e.target))) return;
+    if (!e.ctrlKey) return; // normal right-click passes through
     e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation();
-    const el = e.target;
-    if (lockedEl && lockedEl !== el) lockedEl.classList.remove('attr-insp-lock');
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    const el = elementAtPoint(e.clientX, e.clientY) || e.target;
+    if (!el || el === document.body || el === document.documentElement) return;
     if (lockedEl === el) {
-      el.classList.remove('attr-insp-lock');
+      // unlock same element
+      el.classList.remove('attr-insp-lock', 'attr-insp-highlight');
       lockedEl = null;
+      if (highlightEl) { highlightEl.classList.remove('attr-insp-highlight'); highlightEl = null; }
+      removePopup();
     } else {
+      if (lockedEl) lockedEl.classList.remove('attr-insp-lock');
+      if (highlightEl && highlightEl !== el) highlightEl.classList.remove('attr-insp-highlight');
       lockedEl = el;
       el.classList.add('attr-insp-lock');
+      highlightEl = el;
+      buildPopup(el, true);
     }
-    if (highlightEl && highlightEl !== el) highlightEl.classList.remove('attr-insp-highlight');
-    highlightEl = el;
-    buildPopup(el, !!lockedEl);
   }
 
   function onKey(e) {
@@ -137,7 +142,7 @@
     if (enabled) return;
     enabled = true;
     document.addEventListener('mousemove', onMouseMove, true);
-    document.addEventListener('click', onClick, true);
+    document.addEventListener('contextmenu', onContextMenu, true);
     document.addEventListener('keydown', onKey, true);
   }
 
@@ -145,7 +150,7 @@
     if (!enabled) return;
     enabled = false;
     document.removeEventListener('mousemove', onMouseMove, true);
-    document.removeEventListener('click', onClick, true);
+    document.removeEventListener('contextmenu', onContextMenu, true);
     document.removeEventListener('keydown', onKey, true);
     if (highlightEl) { highlightEl.classList.remove('attr-insp-highlight'); highlightEl = null; }
     if (lockedEl) { lockedEl.classList.remove('attr-insp-lock'); lockedEl = null; }
