@@ -29,6 +29,13 @@
     .attr-insp-popup td { border-bottom: 1px solid #333; padding: 3px 8px 3px 0; vertical-align: top; word-break: break-all; }
     .attr-insp-popup .k { color: #9cdcfe; white-space: nowrap; }
     .attr-insp-popup .v { color: #ce9178; }
+    .attr-insp-popup .copy {
+      display: inline-block; margin-left: 6px; cursor: pointer; color: #888;
+      font-size: 11px; vertical-align: top; user-select: none; opacity: .6;
+      pointer-events: auto;
+    }
+    .attr-insp-popup .copy:hover { color: #4caf50; opacity: 1; }
+    .attr-insp-popup .copy.copied { color: #4caf50 !important; opacity: 1; }
     .attr-insp-popup .close { position: absolute; top: 4px; right: 8px; cursor: pointer; color: #888; font-size: 14px; }
     .attr-insp-popup .close:hover { color: #fff; }
     .attr-insp-lock { outline-color: #ffd700 !important; }
@@ -51,6 +58,24 @@
     return `<${tag}${id}${cls}>`;
   }
 
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+  }
+
   function buildPopup(el, isLocked) {
     removePopup();
     const attrs = [];
@@ -59,10 +84,27 @@
     popupEl.className = 'attr-insp-popup' + (isLocked ? ' locked' : '');
     let rows;
     if (!attrs.length) rows = '<tr><td>(no attributes)</td></tr>';
-    else rows = attrs.map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`).join('');
+    else rows = attrs.map(([k, v]) =>
+      `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}<span class="copy" data-val="${esc(v)}" title="Copy value">⧉</span></td></tr>`
+    ).join('');
     const lockedBadge = isLocked ? ' <span style="color:#ffd700">[locked]</span>' : '';
     popupEl.innerHTML = `<h3>${esc(describe(el))}${lockedBadge}</h3>${isLocked ? '<span class="close" title="close (Esc)">✕</span>' : ''}<table>${rows}</table>`;
     document.body.appendChild(popupEl);
+
+    popupEl.querySelectorAll('.copy').forEach((btn) => {
+      btn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+        copyText(btn.dataset.val);
+        btn.textContent = '✓';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          if (btn.isConnected) { btn.textContent = '⧉'; btn.classList.remove('copied'); }
+        }, 900);
+      });
+    });
+
     if (isLocked) {
       popupEl.querySelector('.close').addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -93,6 +135,9 @@
 
   function onMouseMove(e) {
     if (!enabled) return;
+    // Freeze rebuilds while cursor is over the popup (e.g. reaching a copy icon),
+    // so the row doesn't get replaced mid-click. Copy spans set pointer-events:auto.
+    if (popupEl && (e.target === popupEl || popupEl.contains(e.target))) return;
     lastClientX = e.clientX;
     lastClientY = e.clientY;
     if (lockedEl) return;
