@@ -7,6 +7,9 @@
   let highlightEl = null;
   let popupEl = null;
   let lockedEl = null;
+  let rafPending = false;
+  let lastClientX = 0;
+  let lastClientY = 0;
 
   const style = document.createElement('style');
   style.textContent = `
@@ -18,7 +21,9 @@
       font: 12px/1.5 Consolas, "Courier New", monospace;
       padding: 10px 12px; border-top-left-radius: 6px;
       box-shadow: 0 0 14px rgba(0,0,0,.7);
+      pointer-events: none;
     }
+    .attr-insp-popup.locked { pointer-events: auto; }
     .attr-insp-popup h3 { margin: 0 0 8px; color: #ff6a00; font-size: 13px; word-break: break-all; }
     .attr-insp-popup table { border-collapse: collapse; width: 100%; }
     .attr-insp-popup td { border-bottom: 1px solid #333; padding: 3px 8px 3px 0; vertical-align: top; word-break: break-all; }
@@ -46,48 +51,65 @@
     return `<${tag}${id}${cls}>`;
   }
 
-  function buildPopup(el) {
+  function buildPopup(el, isLocked) {
     removePopup();
     const attrs = [];
     for (const a of el.attributes) attrs.push([a.name, a.value]);
     popupEl = document.createElement('div');
-    popupEl.className = 'attr-insp-popup';
+    popupEl.className = 'attr-insp-popup' + (isLocked ? ' locked' : '');
     let rows;
     if (!attrs.length) rows = '<tr><td>(no attributes)</td></tr>';
     else rows = attrs.map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`).join('');
-    const locked = el === lockedEl ? ' <span style="color:#ffd700">[locked]</span>' : '';
-    popupEl.innerHTML = `<h3>${esc(describe(el))}${locked}</h3><span class="close" title="close (Esc)">✕</span><table>${rows}</table>`;
+    const lockedBadge = isLocked ? ' <span style="color:#ffd700">[locked]</span>' : '';
+    popupEl.innerHTML = `<h3>${esc(describe(el))}${lockedBadge}</h3>${isLocked ? '<span class="close" title="close (Esc)">✕</span>' : ''}<table>${rows}</table>`;
     document.body.appendChild(popupEl);
-    popupEl.querySelector('.close').addEventListener('click', () => {
-      if (lockedEl) { lockedEl.classList.remove('attr-insp-highlight', 'attr-insp-lock'); lockedEl = null; }
-      removePopup();
-    });
+    if (isLocked) {
+      popupEl.querySelector('.close').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        if (lockedEl) { lockedEl.classList.remove('attr-insp-highlight', 'attr-insp-lock'); lockedEl = null; }
+        removePopup();
+      });
+    }
   }
 
-  function inPopup(el) {
-    return popupEl && (el === popupEl || popupEl.contains(el));
+  function elementAtPoint(x, y) {
+    if (popupEl) popupEl.style.visibility = 'hidden';
+    const el = document.elementFromPoint(x, y);
+    if (popupEl) popupEl.style.visibility = '';
+    return el;
+  }
+
+  function processHover() {
+    rafPending = false;
+    if (!enabled || lockedEl) return;
+    const el = elementAtPoint(lastClientX, lastClientY);
+    if (!el || el === document.body || el === document.documentElement) return;
+    if (el === highlightEl) return;
+    if (highlightEl) highlightEl.classList.remove('attr-insp-highlight');
+    highlightEl = el;
+    el.classList.add('attr-insp-highlight');
+    buildPopup(el, false);
   }
 
   function onMouseMove(e) {
     if (!enabled || lockedEl) return;
-    const el = e.target;
-    if (inPopup(el)) return;
-    if (highlightEl && highlightEl !== el) highlightEl.classList.remove('attr-insp-highlight');
-    highlightEl = el;
-    el.classList.add('attr-insp-highlight');
-    buildPopup(el);
+    lastClientX = e.clientX;
+    lastClientY = e.clientY;
+    if (!rafPending) {
+      rafPending = true;
+      requestAnimationFrame(processHover);
+    }
   }
 
   function onClick(e) {
     if (!enabled) return;
-    if (inPopup(e.target)) return;
+    if (popupEl && popupEl.classList.contains('locked') && (e.target === popupEl || popupEl.contains(e.target))) return;
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
     const el = e.target;
     if (lockedEl && lockedEl !== el) lockedEl.classList.remove('attr-insp-lock');
     if (lockedEl === el) {
-      // unlock same element
       el.classList.remove('attr-insp-lock');
       lockedEl = null;
     } else {
@@ -96,7 +118,7 @@
     }
     if (highlightEl && highlightEl !== el) highlightEl.classList.remove('attr-insp-highlight');
     highlightEl = el;
-    buildPopup(el);
+    buildPopup(el, !!lockedEl);
   }
 
   function onKey(e) {
