@@ -92,46 +92,52 @@
   }
 
   function onMouseMove(e) {
-    if (!enabled || lockedEl) return;
+    if (!enabled) return;
     lastClientX = e.clientX;
     lastClientY = e.clientY;
+    if (lockedEl) return;
     if (!rafPending) {
       rafPending = true;
       requestAnimationFrame(processHover);
     }
   }
 
-  // Ctrl + right-click toggles lock on element under cursor
+  function clearLock() {
+    if (lockedEl) { lockedEl.classList.remove('attr-insp-lock', 'attr-insp-highlight'); lockedEl = null; }
+    if (highlightEl) { highlightEl.classList.remove('attr-insp-highlight'); highlightEl = null; }
+    removePopup();
+  }
+
+  function reprocessHover() {
+    if (!rafPending) { rafPending = true; requestAnimationFrame(processHover); }
+  }
+
+  // Ctrl + right-click: lock element under cursor; while locked, unlock anywhere
   function onContextMenu(e) {
     if (!enabled) return;
     if (!e.ctrlKey) return; // normal right-click passes through
     e.preventDefault();
     e.stopPropagation();
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    if (lockedEl) {
+      // locked -> Ctrl+right-click anywhere unlocks, then resume hover
+      clearLock();
+      reprocessHover();
+      return;
+    }
     const el = elementAtPoint(e.clientX, e.clientY) || e.target;
     if (!el || el === document.body || el === document.documentElement) return;
-    if (lockedEl === el) {
-      // unlock same element
-      el.classList.remove('attr-insp-lock', 'attr-insp-highlight');
-      lockedEl = null;
-      if (highlightEl) { highlightEl.classList.remove('attr-insp-highlight'); highlightEl = null; }
-      removePopup();
-    } else {
-      if (lockedEl) lockedEl.classList.remove('attr-insp-lock');
-      if (highlightEl && highlightEl !== el) highlightEl.classList.remove('attr-insp-highlight');
-      lockedEl = el;
-      el.classList.add('attr-insp-lock');
-      highlightEl = el;
-      buildPopup(el, true);
-    }
+    lockedEl = el;
+    el.classList.add('attr-insp-lock');
+    highlightEl = el;
+    buildPopup(el, true);
   }
 
   function onKey(e) {
     if (e.key === 'Escape') {
       if (lockedEl) {
-        lockedEl.classList.remove('attr-insp-lock', 'attr-insp-highlight');
-        lockedEl = null;
-        removePopup();
+        clearLock();
+        reprocessHover();
       } else {
         disable();
       }
