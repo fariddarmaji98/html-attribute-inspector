@@ -3,7 +3,7 @@
   "name": "Attribute Inspector",
   "version": "1.0.0",
   "description": "Hover any element to see all its HTML attributes in a popup. Click to lock selection.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "activeTab"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Attribute Inspector",

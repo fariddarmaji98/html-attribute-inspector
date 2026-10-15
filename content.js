@@ -163,6 +163,11 @@
     removePopup();
   }
 
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg && msg.type === 'ping') sendResponse({ type: 'pong', enabled: enabled });
+    return true;
+  });
+
   chrome.storage.local.get('attrInspEnabled', (r) => { if (r.attrInspEnabled) enable(); });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.attrInspEnabled) {
