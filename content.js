@@ -181,9 +181,12 @@
   function onKey(e) {
     if (e.key === 'Escape') {
       if (lockedEl) {
+        // 1st Esc: release lock, resume hover
         clearLock();
         reprocessHover();
-      } else {
+      } else if (enabled) {
+        // 2nd Esc: deactivate — sync storage so popup toggle matches
+        chrome.storage.local.set({ attrInspEnabled: false });
         disable();
       }
     }
