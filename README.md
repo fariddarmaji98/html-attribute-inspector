@@ -37,4 +37,16 @@ content.js      # hover detection, popup render, lock/unlock, copy
 popup.html      # UI popup extension
 popup.js        # toggle on/off + liveness check
 generate_icons.py  # generator icon PNG
+build.py        # bikin zip siap upload ke Chrome Web Store
+store/          # aset & copy listing store (screenshot, listing.md)
 ```
+
+## Publish ke Chrome Web Store
+
+```bash
+python build.py 1.0.1     # bump versi + rebuild zip
+```
+
+Upload `html-attribute-inspector-v<versi>.zip` lewat [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole). Versi di `manifest.json` harus lebih tinggi dari versi yang sudah live, kalau tidak upload akan ditolak.
+
+Teks listing (deskripsi, justifikasi permission, checklist aset) ada di `store/listing.md`. Screenshot 1280x800 ada di `store/promo-1280x800.png`.
