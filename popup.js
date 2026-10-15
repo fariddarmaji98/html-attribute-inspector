@@ -1,5 +1,4 @@
 const btn = document.getElementById('toggle');
-const reloadBtn = document.getElementById('reload');
 const statusEl = document.getElementById('status');
 
 function render(on) {
@@ -7,47 +6,35 @@ function render(on) {
   btn.classList.toggle('off', !on);
 }
 
-function onAlive() {
-  statusEl.textContent = 'Active on this tab.';
-  statusEl.style.color = '#4caf50';
-  btn.style.display = '';
-  reloadBtn.style.display = 'none';
-  chrome.storage.local.get('attrInspEnabled', (r) => render(!!r.attrInspEnabled));
-}
-
-function onDead(tabId) {
-  statusEl.textContent = 'Not active. Reload tab to enable.';
+function fail(msg) {
+  statusEl.textContent = msg;
   statusEl.style.color = '#ff6a00';
-  btn.style.display = 'none';
-  reloadBtn.style.display = '';
-  reloadBtn.onclick = () => {
-    chrome.tabs.reload(tabId);
-    window.close();
-  };
+  btn.disabled = true;
 }
 
-chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-  if (!tabs[0] || tabs[0].id == null) { statusEl.textContent = 'No active tab.'; return; }
-  const tabId = tabs[0].id;
-  const done = { v: false };
-  const timeout = setTimeout(() => {
-    if (done.v) return;
-    done.v = true;
-    onDead(tabId);
-  }, 400);
-  chrome.tabs.sendMessage(tabId, { type: 'ping' }, (resp) => {
-    clearTimeout(timeout);
-    if (done.v) return;
-    done.v = true;
-    if (chrome.runtime.lastError || !resp || resp.type !== 'pong') onDead(tabId);
-    else onAlive();
-  });
+async function init() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab || tab.id == null || !/^https?:/.test(tab.url || '')) {
+    return fail('Cannot inspect this page.');
+  }
+  try {
+    // Injected on demand — activeTab grants access to this tab only.
+    // content.js is guarded, so repeat injection is a no-op.
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
+  } catch (e) {
+    return fail('Cannot inspect this page.');
+  }
+  statusEl.textContent = 'Ready on this tab.';
+  statusEl.style.color = '#4caf50';
+  const r = await chrome.storage.local.get('attrInspEnabled');
+  render(!!r.attrInspEnabled);
+}
+
+btn.addEventListener('click', async () => {
+  const r = await chrome.storage.local.get('attrInspEnabled');
+  const next = !r.attrInspEnabled;
+  await chrome.storage.local.set({ attrInspEnabled: next });
+  render(next);
 });
 
-btn.addEventListener('click', () => {
-  chrome.storage.local.get('attrInspEnabled', (r) => {
-    const next = !r.attrInspEnabled;
-    chrome.storage.local.set({ attrInspEnabled: next });
-    render(next);
-  });
-});
+init();

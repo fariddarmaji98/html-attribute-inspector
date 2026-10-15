@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "Attribute Inspector",
-  "version": "1.0.0",
+  "name": "HTML Attribute Inspector",
+  "version": "1.0.1",
   "description": "Hover any element to see all its HTML attributes in a popup. Ctrl+right-click to lock. Copy values with one click.",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "scripting"
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Attribute Inspector",
+    "default_title": "HTML Attribute Inspector",
     "default_icon": {
       "16": "icon16.png",
       "48": "icon48.png",
@@ -20,16 +21,5 @@
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "content.js"
-      ],
-      "run_at": "document_idle"
-    }
-  ]
+  }
 }

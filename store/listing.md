@@ -3,7 +3,7 @@
 Paste these into the CWS developer dashboard when creating the item.
 
 ## Name (max 45 chars)
-Attribute Inspector
+HTML Attribute Inspector
 
 ## Short description (max 132 chars)
 Hover any element to see all its HTML attributes in a popup. Ctrl+right-click to lock. Copy values with one click.
@@ -15,7 +15,7 @@ Developer Tools
 
 See every HTML attribute on any element — instantly, without opening DevTools.
 
-Hover over any part of a page and Attribute Inspector shows a popup with all of that element's attributes and their values. No layers of markup to dig through, no context switching.
+Hover over any part of a page and HTML Attribute Inspector shows a popup with all of that element's attributes and their values. No layers of markup to dig through, no context switching.
 
 FEATURES
 • Hover to inspect — move your cursor over any element and its full attribute list appears
@@ -39,12 +39,46 @@ PRIVACY
 This extension collects no data. It reads attributes from the page you are viewing, locally, and sends nothing anywhere.
 
 ## Single purpose description
-Displays the HTML attributes of the page element currently under the user's cursor.
+Displays the HTML attributes of the element currently under the user's cursor on any web page, in a read-only popup. The user switches the inspector on from the toolbar popup, hovers to see attributes, and can copy individual values. No page content is modified and no data leaves the browser.
 
 ## Permission justifications
 
-- **storage** — remembers whether the inspector is switched on, so the setting persists between popups and sessions.
-- **activeTab** — checks whether the content script is running in the current tab and reloads that tab when the user clicks the reload button, so the extension can work on tabs opened before installation.
+### Justifikasi storage
+```
+The extension stores a single boolean flag recording whether the inspector is
+switched on or off. It is read when the popup opens so the toggle shows the
+state the user last chose, and written when the user presses Activate or
+Deactivate. No page content, URLs, or personal data are stored.
+```
+
+### Justifikasi activeTab
+```
+The extension's single purpose is to show the HTML attributes of the element
+under the user's cursor. activeTab grants access to the current tab only after
+the user clicks the extension icon, which is exactly when the extension needs
+to read that page. It is used to inject the content script into the tab the
+user is actively viewing and to read that tab's URL, so the extension can
+refuse to run on browser-internal pages. No access is requested to any other
+tab, and none is requested before the user clicks the icon.
+```
+
+### Justifikasi scripting
+```
+The content script is injected on demand with chrome.scripting.executeScript
+into the active tab only, after the user clicks the extension icon. The
+extension deliberately avoids declaring a content script with an <all_urls>
+match pattern, so that it never runs on a page the user has not explicitly
+chosen to inspect. The injected script reads the attribute names and values of
+one element at a time and renders them locally in an on-page popup. Nothing is
+transmitted anywhere.
+```
+
+### Justifikasi Izin host
+```
+No host permission is requested. The manifest declares no host_permissions and
+no content_scripts match patterns. Page access comes solely from activeTab,
+which the user grants per tab by clicking the extension icon.
+```
 
 ## Remote code
 No. All logic ships inside the package.

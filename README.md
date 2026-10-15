@@ -7,7 +7,7 @@ Chrome extension (Manifest V3) untuk melihat semua attribute HTML dari elemen ya
 - **Hover** elemen apa pun → popup muncul di kanan bawah berisi daftar semua attribute (`nama` → `value`)
 - **Ctrl + right-click** → lock elemen yang sedang di-hover, popup tetap tampil walau kursor pindah
 - **Copy icon** (⧉) di ujung tiap value → klik untuk copy value attribute ke clipboard
-- Deteksi liveness: kalau content script belum ter-inject di tab (misal tab dibuka sebelum install), popup menampilkan tombol **Reload this tab**
+- Content script di-inject on-demand via `chrome.scripting` — tidak butuh host permission (`<all_urls>`)
 
 ## Shortcut
 
@@ -25,17 +25,17 @@ Catatan: **Esc** bekerja dua tahap — kalau ada elemen ter-lock, Esc pertama me
 1. Buka `chrome://extensions`
 2. Aktifkan **Developer mode** (kanan atas)
 3. Klik **Load unpacked** → pilih folder project ini
-4. Klik icon extension di toolbar → **Activate**
+4. Buka halaman web apa pun → klik icon extension → **Activate**
 
-Kalau tab sudah terbuka sebelum extension di-load, klik **Reload this tab** di popup extension supaya content script ter-inject.
+Content script di-inject saat popup dibuka, jadi tidak perlu reload tab walau extension baru di-install.
 
 ## Struktur
 
 ```
-manifest.json   # MV3 config, permission: storage + activeTab
+manifest.json   # MV3 config, permission: storage + activeTab + scripting
 content.js      # hover detection, popup render, lock/unlock, copy
 popup.html      # UI popup extension
-popup.js        # toggle on/off + liveness check
+popup.js        # toggle on/off + inject content script on demand
 generate_icons.py  # generator icon PNG
 build.py        # bikin zip siap upload ke Chrome Web Store
 store/          # aset & copy listing store (screenshot, listing.md)

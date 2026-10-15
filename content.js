@@ -1,4 +1,4 @@
-// Attribute Inspector — content script
+// HTML Attribute Inspector — content script
 (() => {
   if (window.__attrInspector) return;
   window.__attrInspector = true;
@@ -210,11 +210,6 @@
     if (lockedEl) { lockedEl.classList.remove('attr-insp-lock'); lockedEl = null; }
     removePopup();
   }
-
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg && msg.type === 'ping') sendResponse({ type: 'pong', enabled: enabled });
-    return true;
-  });
 
   chrome.storage.local.get('attrInspEnabled', (r) => { if (r.attrInspEnabled) enable(); });
   chrome.storage.onChanged.addListener((changes, area) => {
