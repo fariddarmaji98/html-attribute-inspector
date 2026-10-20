@@ -29,6 +29,32 @@ Catatan: **Esc** bekerja dua tahap — kalau ada elemen ter-lock, Esc pertama me
 
 Content script di-inject saat popup dibuka, jadi tidak perlu reload tab walau extension baru di-install.
 
+## Deploy
+
+Push tag → GitHub Actions build zip, lampirkan ke GitHub Release, dan (kalau secret CWS diisi) upload + publish ke Chrome Web Store.
+
+```bash
+git tag v1.0.2
+git push origin v1.0.2
+```
+
+Tag `v1.0.2` → `manifest.json` version di-set ke `1.0.2` saat build. Tag dan versi wajib sama.
+
+### Aktifkan auto-publish ke Chrome Web Store
+
+Tanpa secret, workflow cuma bikin GitHub Release (package tetap dihasilkan & diverifikasi). Untuk auto-upload ke store, tambahkan 4 secret di **Settings → Secrets and variables → Actions**:
+
+| Secret | Isi |
+|---|---|
+| `CWS_EXTENSION_ID` | ID extension dari CWS dashboard (32 char) |
+| `CWS_CLIENT_ID` | OAuth client ID dari Google Cloud Console |
+| `CWS_CLIENT_SECRET` | OAuth client secret |
+| `CWS_REFRESH_TOKEN` | Refresh token hasil OAuth sekali jalan |
+
+Cara dapat kredensial CWS: publish manual pertama kali lewat dashboard, lalu ikuti [panduan `chrome-webstore-upload-cli`](https://github.com/fregante/chrome-webstore-upload-cli) untuk generate refresh token.
+
+Workflow ada di `.github/workflows/release.yml`. Bisa juga dijalankan manual dari tab **Actions** (pakai versi yang ada di `manifest.json`).
+
 ## Struktur
 
 ```
